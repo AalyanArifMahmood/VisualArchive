@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="500" viewBox="0 0 900 500">
+  <rect width="900" height="500" fill="#8B7D6B"/>
+  <text x="450" y="230" font-family="Georgia, serif" font-size="32" fill="rgba(255,255,255,0.6)" text-anchor="middle">Featured Collection</text>
+  <text x="450" y="290" font-family="Georgia, serif" font-size="18" fill="rgba(255,255,255,0.4)" text-anchor="middle">A glimpse into the archive</text>
+</svg>
