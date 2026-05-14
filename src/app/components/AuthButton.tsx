@@ -1,6 +1,7 @@
 "use client";
 
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
+import Link from "next/link";
 
 export default function AuthButton() {
   const { data: session, status } = useSession();
@@ -30,11 +31,11 @@ export default function AuthButton() {
   }
 
   return (
-    <button
-      onClick={() => signIn("google")}
+    <Link
+      href="/login"
       className="text-cream/70 hover:text-cream transition-colors text-xs tracking-widest uppercase"
     >
       Sign In
-    </button>
+    </Link>
   );
 }
