@@ -34,9 +34,9 @@ export default function LoginPage() {
 
   return (
     <div className="max-w-sm mx-auto px-6 py-24">
-      <h1 className="text-3xl font-light tracking-tight mb-2">Sign In</h1>
+      <h1 className="text-3xl font-light tracking-tight mb-2">Admin Login</h1>
       <p className="text-ink-muted text-sm mb-8">
-        Enter your credentials to access editing features.
+        This area is restricted to authorized administrators.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-5">

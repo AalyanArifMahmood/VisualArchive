@@ -6,36 +6,25 @@ import Link from "next/link";
 export default function AuthButton() {
   const { data: session, status } = useSession();
 
-  if (status === "loading") {
-    return (
-      <span className="text-cream/50 text-xs tracking-widest uppercase">
-        ...
-      </span>
-    );
-  }
+  if (status === "loading") return null;
 
   if (session?.user) {
     return (
-      <div className="flex items-center gap-3">
-        <span className="text-cream/60 text-xs tracking-wide hidden sm:inline">
-          {session.user.email}
-        </span>
-        <button
-          onClick={() => signOut()}
-          className="text-cream/70 hover:text-cream transition-colors text-xs tracking-widest uppercase"
-        >
-          Sign Out
-        </button>
-      </div>
+      <button
+        onClick={() => signOut()}
+        className="text-cream/40 hover:text-cream/70 transition-colors text-xs tracking-widest uppercase"
+      >
+        Admin Logout
+      </button>
     );
   }
 
   return (
     <Link
       href="/login"
-      className="text-cream/70 hover:text-cream transition-colors text-xs tracking-widest uppercase"
+      className="text-cream/40 hover:text-cream/70 transition-colors text-xs tracking-widest uppercase"
     >
-      Sign In
+      Admin
     </Link>
   );
 }

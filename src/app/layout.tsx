@@ -29,30 +29,26 @@ export default function RootLayout({
               <Link href="/" className="text-2xl tracking-wide font-light text-cream hover:text-accent transition-colors">
                 The Visual Archive
               </Link>
-              <div className="flex items-center gap-6">
-                <nav className="flex gap-8 text-sm tracking-widest uppercase">
-                  <Link href="/" className="text-cream/70 hover:text-cream transition-colors">
-                    Home
-                  </Link>
-                  <Link href="/archive" className="text-cream/70 hover:text-cream transition-colors">
-                    Archive
-                  </Link>
-                  <Link href="/about" className="text-cream/70 hover:text-cream transition-colors">
-                    About
-                  </Link>
-                </nav>
-                <div className="border-l border-cream/20 pl-6">
-                  <AuthButton />
-                </div>
-              </div>
+              <nav className="flex gap-8 text-sm tracking-widest uppercase">
+                <Link href="/" className="text-cream/70 hover:text-cream transition-colors">
+                  Home
+                </Link>
+                <Link href="/archive" className="text-cream/70 hover:text-cream transition-colors">
+                  Archive
+                </Link>
+                <Link href="/about" className="text-cream/70 hover:text-cream transition-colors">
+                  About
+                </Link>
+              </nav>
             </div>
           </header>
 
           <main className="flex-1">{children}</main>
 
           <footer className="border-t border-border mt-auto bg-sepia">
-            <div className="max-w-6xl mx-auto px-6 py-8 text-center text-sm text-cream/50">
-              © {new Date().getFullYear()} The Visual Archive. All rights reserved.
+            <div className="max-w-6xl mx-auto px-6 py-8 flex items-center justify-between text-sm text-cream/50">
+              <span>© {new Date().getFullYear()} The Visual Archive. All rights reserved.</span>
+              <AuthButton />
             </div>
           </footer>
         </Providers>
