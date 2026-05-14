@@ -1,7 +1,20 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 
-export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "aalyanarif875@gmail.com";
+interface AdminUser {
+  email: string;
+  password: string;
+}
+
+function getAdminUsers(): AdminUser[] {
+  try {
+    return JSON.parse(process.env.ADMIN_USERS || "[]");
+  } catch {
+    return [];
+  }
+}
+
+export const ADMIN_EMAILS = getAdminUsers().map((u) => u.email);
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -15,11 +28,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const email = credentials?.email as string;
         const password = credentials?.password as string;
 
-        if (
-          email === process.env.ADMIN_EMAIL &&
-          password === process.env.ADMIN_PASSWORD
-        ) {
-          return { id: "1", email, name: "Admin" };
+        const users = getAdminUsers();
+        const match = users.find(
+          (u) => u.email === email && u.password === password
+        );
+
+        if (match) {
+          return { id: match.email, email: match.email, name: "Admin" };
         }
 
         return null;

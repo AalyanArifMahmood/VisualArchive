@@ -3,7 +3,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useSession } from "next-auth/react";
 
-const ADMIN_EMAIL = "aalyanarif875@gmail.com";
+const ADMIN_EMAILS = [
+  "aalyanarif875@gmail.com",
+  "mahnoorlali1@gmail.com",
+];
 
 interface EditableTextProps {
   contentKey: string;
@@ -21,7 +24,7 @@ export default function EditableText({
   multiline = false,
 }: EditableTextProps) {
   const { data: session } = useSession();
-  const isAdmin = session?.user?.email === ADMIN_EMAIL;
+  const isAdmin = !!session?.user?.email && ADMIN_EMAILS.includes(session.user.email);
 
   const [value, setValue] = useState(defaultValue);
   const [editing, setEditing] = useState(false);

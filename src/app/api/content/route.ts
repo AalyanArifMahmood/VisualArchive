@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, ADMIN_EMAIL } from "@/auth";
+import { auth, ADMIN_EMAILS } from "@/auth";
 import fs from "fs/promises";
 import path from "path";
 
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const session = await auth();
-  if (!session?.user?.email || session.user.email !== ADMIN_EMAIL) {
+  if (!session?.user?.email || !ADMIN_EMAILS.includes(session.user.email)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
