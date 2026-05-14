@@ -3,6 +3,7 @@
 import { useEffect, useCallback } from "react";
 import Image from "next/image";
 import type { ArchiveItem } from "../data/archive";
+import EditableText from "./EditableText";
 
 interface LightboxProps {
   item: ArchiveItem | null;
@@ -61,9 +62,13 @@ export default function Lightbox({ item, onClose }: LightboxProps) {
           <p className="text-xs tracking-widest uppercase text-ink-muted mb-2">
             {item.year} · Vol. {item.volume}, Issue {item.issue}
           </p>
-          <p className="text-sm leading-relaxed text-ink-light">
-            {item.caption}
-          </p>
+          <EditableText
+            contentKey={`archive-caption-${item.id}`}
+            defaultValue={item.caption}
+            as="p"
+            className="text-sm leading-relaxed text-ink-light"
+            multiline
+          />
         </div>
       </div>
     </div>

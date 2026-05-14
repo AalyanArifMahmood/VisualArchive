@@ -5,6 +5,7 @@ import Image from "next/image";
 import { archiveItems, years } from "../data/archive";
 import type { ArchiveItem } from "../data/archive";
 import Lightbox from "./Lightbox";
+import EditableText from "./EditableText";
 
 export default function ArchiveGrid() {
   const [activeYear, setActiveYear] = useState<number | null>(null);
@@ -48,10 +49,12 @@ export default function ArchiveGrid() {
         {filtered.map((item) => (
           <div
             key={item.id}
-            className="group cursor-pointer"
-            onClick={() => setLightboxItem(item)}
+            className="group"
           >
-            <div className="overflow-hidden bg-cream-dark">
+            <div
+              className="overflow-hidden bg-cream-dark cursor-pointer"
+              onClick={() => setLightboxItem(item)}
+            >
               <Image
                 src={item.src}
                 alt={item.caption}
@@ -64,9 +67,13 @@ export default function ArchiveGrid() {
               <p className="text-xs tracking-widest uppercase text-ink-muted">
                 {item.year} · Vol. {item.volume}, No. {item.issue}
               </p>
-              <p className="mt-1 text-sm leading-relaxed text-ink-light line-clamp-2">
-                {item.caption}
-              </p>
+              <EditableText
+                contentKey={`archive-caption-${item.id}`}
+                defaultValue={item.caption}
+                as="p"
+                className="mt-1 text-sm leading-relaxed text-ink-light line-clamp-2"
+                multiline
+              />
             </div>
           </div>
         ))}
