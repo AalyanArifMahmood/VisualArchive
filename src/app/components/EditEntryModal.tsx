@@ -14,6 +14,8 @@ interface EntryData {
 interface EditEntryModalProps {
   entryId: string;
   defaults: EntryData;
+  isCustom?: boolean;
+  isNew?: boolean;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -21,6 +23,8 @@ interface EditEntryModalProps {
 export default function EditEntryModal({
   entryId,
   defaults,
+  isCustom = false,
+  isNew = false,
   onClose,
   onSaved,
 }: EditEntryModalProps) {
@@ -28,8 +32,10 @@ export default function EditEntryModal({
   const [saving, setSaving] = useState(false);
   const [imagePreview, setImagePreview] = useState(defaults.src);
 
-  // Load saved values on mount
+  // Load saved values on mount (only for existing static entries)
   useEffect(() => {
+    if (isNew || isCustom) return;
+
     const fields = ["src", "year", "volume", "issue", "caption"] as const;
     Promise.all(
       fields.map((field) =>
@@ -49,7 +55,7 @@ export default function EditEntryModal({
         if (updates.src) setImagePreview(updates.src);
       }
     });
-  }, [entryId]);
+  }, [entryId, isNew, isCustom]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -64,25 +70,47 @@ export default function EditEntryModal({
   }, [onClose]);
 
   const handleSave = async () => {
+    if (!form.src || !form.year || !form.volume || !form.issue || !form.caption) {
+      alert("All fields are required.");
+      return;
+    }
+
     setSaving(true);
-    const fields = ["src", "year", "volume", "issue", "caption"] as const;
     try {
-      await Promise.all(
-        fields.map((field) =>
-          fetch("/api/content", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              key: `archive-${field}-${entryId}`,
-              value: form[field],
-            }),
-          })
-        )
-      );
+      if (isNew) {
+        // Create new entry via entries API
+        await fetch("/api/entries", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        });
+      } else if (isCustom) {
+        // Update custom entry (POST with existing ID updates in place)
+        await fetch("/api/entries", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...form, id: entryId }),
+        });
+      } else {
+        // Update static entry overrides via content API
+        const fields = ["src", "year", "volume", "issue", "caption"] as const;
+        await Promise.all(
+          fields.map((field) =>
+            fetch("/api/content", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                key: `archive-${field}-${entryId}`,
+                value: form[field],
+              }),
+            })
+          )
+        );
+      }
       onSaved();
       onClose();
     } catch {
-      // Error handling
+      alert("Failed to save. Please try again.");
     }
     setSaving(false);
   };
@@ -109,10 +137,12 @@ export default function EditEntryModal({
           ×
         </button>
 
-        <h2 className="text-xl font-light tracking-tight mb-6">Edit Entry</h2>
+        <h2 className="text-xl font-light tracking-tight mb-6">
+          {isNew ? "Add New Entry" : "Edit Entry"}
+        </h2>
 
         <div className="space-y-5">
-          {/* Image preview */}
+          {/* Image URL */}
           <div>
             <label className="block text-xs tracking-widest uppercase text-ink-muted mb-2">
               Image URL
@@ -121,6 +151,7 @@ export default function EditEntryModal({
               type="text"
               value={form.src}
               onChange={(e) => handleChange("src", e.target.value)}
+              placeholder="https://example.com/image.jpg or /images/..."
               className="w-full px-3 py-2 bg-cream-dark border border-border text-ink text-sm rounded focus:outline-none focus:border-accent transition-colors"
             />
             {imagePreview && (
@@ -146,6 +177,7 @@ export default function EditEntryModal({
                 type="text"
                 value={form.year}
                 onChange={(e) => handleChange("year", e.target.value)}
+                placeholder="1965"
                 className="w-full px-3 py-2 bg-cream-dark border border-border text-ink text-sm rounded focus:outline-none focus:border-accent transition-colors"
               />
             </div>
@@ -157,6 +189,7 @@ export default function EditEntryModal({
                 type="text"
                 value={form.volume}
                 onChange={(e) => handleChange("volume", e.target.value)}
+                placeholder="1"
                 className="w-full px-3 py-2 bg-cream-dark border border-border text-ink text-sm rounded focus:outline-none focus:border-accent transition-colors"
               />
             </div>
@@ -168,6 +201,7 @@ export default function EditEntryModal({
                 type="text"
                 value={form.issue}
                 onChange={(e) => handleChange("issue", e.target.value)}
+                placeholder="1"
                 className="w-full px-3 py-2 bg-cream-dark border border-border text-ink text-sm rounded focus:outline-none focus:border-accent transition-colors"
               />
             </div>
@@ -182,6 +216,7 @@ export default function EditEntryModal({
               value={form.caption}
               onChange={(e) => handleChange("caption", e.target.value)}
               rows={3}
+              placeholder="Describe this archive entry..."
               className="w-full px-3 py-2 bg-cream-dark border border-border text-ink text-sm rounded focus:outline-none focus:border-accent transition-colors resize-y"
             />
           </div>
@@ -193,7 +228,7 @@ export default function EditEntryModal({
               disabled={saving}
               className="flex-1 py-2.5 bg-sepia text-cream text-sm tracking-widest uppercase hover:bg-ink transition-colors disabled:opacity-50"
             >
-              {saving ? "Saving..." : "Save Changes"}
+              {saving ? "Saving..." : isNew ? "Add Entry" : "Save Changes"}
             </button>
             <button
               onClick={onClose}

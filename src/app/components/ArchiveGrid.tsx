@@ -19,6 +19,7 @@ interface DisplayItem extends ArchiveItem {
   displayVolume: string;
   displayIssue: string;
   displayCaption: string;
+  isCustom: boolean;
 }
 
 export default function ArchiveGrid() {
@@ -28,19 +29,12 @@ export default function ArchiveGrid() {
   const [activeYear, setActiveYear] = useState<number | null>(null);
   const [lightboxItem, setLightboxItem] = useState<ArchiveItem | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [displayItems, setDisplayItems] = useState<DisplayItem[]>(
-    archiveItems.map((item) => ({
-      ...item,
-      displaySrc: item.src,
-      displayYear: String(item.year),
-      displayVolume: String(item.volume),
-      displayIssue: String(item.issue),
-      displayCaption: item.caption,
-    }))
-  );
+  const [addingEntry, setAddingEntry] = useState(false);
+  const [displayItems, setDisplayItems] = useState<DisplayItem[]>([]);
   const [loaded, setLoaded] = useState(false);
 
-  const loadOverrides = useCallback(async () => {
+  const loadAllItems = useCallback(async () => {
+    // Load overrides for static items
     const fields = ["src", "year", "volume", "issue", "caption"] as const;
     const updates: Record<string, Partial<Record<string, string>>> = {};
 
@@ -60,8 +54,20 @@ export default function ArchiveGrid() {
       )
     );
 
-    setDisplayItems(
-      archiveItems.map((item) => {
+    // Check which static items are deleted
+    const deletedChecks = await Promise.all(
+      archiveItems.map((item) =>
+        fetch(`/api/content?key=${encodeURIComponent(`archive-deleted-${item.id}`)}`)
+          .then((res) => res.json())
+          .then((data) => ({ id: item.id, deleted: data.value === "true" }))
+          .catch(() => ({ id: item.id, deleted: false }))
+      )
+    );
+    const deletedIds = new Set(deletedChecks.filter((d) => d.deleted).map((d) => d.id));
+
+    const staticItems: DisplayItem[] = archiveItems
+      .filter((item) => !deletedIds.has(item.id))
+      .map((item) => {
         const overrides = updates[item.id] || {};
         return {
           ...item,
@@ -70,22 +76,69 @@ export default function ArchiveGrid() {
           displayVolume: overrides.volume || String(item.volume),
           displayIssue: overrides.issue || String(item.issue),
           displayCaption: overrides.caption || item.caption,
+          isCustom: false,
         };
-      })
-    );
+      });
+
+    // Load custom entries
+    let customItems: DisplayItem[] = [];
+    try {
+      const res = await fetch("/api/entries");
+      const data = await res.json();
+      customItems = (data.entries || []).map((entry: Record<string, string>) => ({
+        id: entry.id,
+        src: entry.src || "/images/hero-1.svg",
+        year: parseInt(entry.year) || 0,
+        volume: parseInt(entry.volume) || 0,
+        issue: parseInt(entry.issue) || 0,
+        caption: entry.caption || "",
+        displaySrc: entry.src || "/images/hero-1.svg",
+        displayYear: entry.year || "0",
+        displayVolume: entry.volume || "0",
+        displayIssue: entry.issue || "0",
+        displayCaption: entry.caption || "",
+        isCustom: true,
+      }));
+    } catch {}
+
+    setDisplayItems([...staticItems, ...customItems]);
     setLoaded(true);
   }, []);
 
   useEffect(() => {
-    loadOverrides();
-  }, [loadOverrides]);
+    loadAllItems();
+  }, [loadAllItems]);
+
+  const handleDelete = async (item: DisplayItem) => {
+    const confirmMsg = item.isCustom
+      ? "Delete this entry permanently?"
+      : "Hide this entry? (It can be restored by removing its override)";
+    if (!confirm(confirmMsg)) return;
+
+    if (item.isCustom) {
+      await fetch("/api/entries", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.id }),
+      });
+    } else {
+      // For static items, mark as deleted in Redis
+      await fetch("/api/content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: `archive-deleted-${item.id}`, value: "true" }),
+      });
+    }
+    loadAllItems();
+  };
 
   const filtered = activeYear
     ? displayItems.filter((item) => item.displayYear === String(activeYear))
     : displayItems;
 
+  // Find the item being edited (static or custom)
   const editingItem = editingId
-    ? archiveItems.find((i) => i.id === editingId)
+    ? displayItems.find((i) => i.id === editingId)
     : null;
 
   return (
@@ -146,18 +199,42 @@ export default function ArchiveGrid() {
             </div>
 
             {isAdmin && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingId(item.id);
-                }}
-                className="absolute top-2 right-2 bg-accent text-cream text-[10px] px-2 py-1 rounded tracking-wide opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                Edit
-              </button>
+              <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingId(item.id);
+                  }}
+                  className="bg-accent text-cream text-[10px] px-2 py-1 rounded tracking-wide"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(item);
+                  }}
+                  className="bg-ink text-cream text-[10px] px-2 py-1 rounded tracking-wide"
+                >
+                  Delete
+                </button>
+              </div>
             )}
           </div>
         ))}
+
+        {/* Add Entry button */}
+        {isAdmin && (
+          <div
+            onClick={() => setAddingEntry(true)}
+            className={`flex flex-col items-center justify-center border-2 border-dashed border-border hover:border-accent cursor-pointer transition-colors min-h-[200px] rounded ${loaded ? "opacity-100" : "opacity-0"}`}
+          >
+            <span className="text-3xl text-ink-muted mb-2">+</span>
+            <span className="text-xs tracking-widest uppercase text-ink-muted">
+              Add Entry
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Lightbox */}
@@ -168,14 +245,33 @@ export default function ArchiveGrid() {
         <EditEntryModal
           entryId={editingItem.id}
           defaults={{
-            src: editingItem.src,
-            year: String(editingItem.year),
-            volume: String(editingItem.volume),
-            issue: String(editingItem.issue),
-            caption: editingItem.caption,
+            src: editingItem.displaySrc,
+            year: editingItem.displayYear,
+            volume: editingItem.displayVolume,
+            issue: editingItem.displayIssue,
+            caption: editingItem.displayCaption,
           }}
+          isCustom={editingItem.isCustom}
           onClose={() => setEditingId(null)}
-          onSaved={loadOverrides}
+          onSaved={loadAllItems}
+        />
+      )}
+
+      {/* Add entry modal */}
+      {addingEntry && (
+        <EditEntryModal
+          entryId=""
+          defaults={{
+            src: "",
+            year: "",
+            volume: "",
+            issue: "",
+            caption: "",
+          }}
+          isCustom={true}
+          isNew={true}
+          onClose={() => setAddingEntry(false)}
+          onSaved={loadAllItems}
         />
       )}
     </>
