@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 
 interface EntryData {
@@ -31,6 +31,9 @@ export default function EditEntryModal({
   const [form, setForm] = useState<EntryData>(defaults);
   const [saving, setSaving] = useState(false);
   const [imagePreview, setImagePreview] = useState(defaults.src);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load saved values on mount (only for existing static entries)
   useEffect(() => {
@@ -120,6 +123,41 @@ export default function EditEntryModal({
     if (field === "src") setImagePreview(value);
   };
 
+  const handleFileUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.url) {
+        setForm((prev) => ({ ...prev, src: data.url }));
+        setImagePreview(data.url);
+      } else {
+        alert("Upload failed. Please try again.");
+      }
+    } catch {
+      alert("Upload failed. Please try again.");
+    }
+    setUploading(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileUpload(file);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileUpload(file);
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
@@ -142,29 +180,52 @@ export default function EditEntryModal({
         </h2>
 
         <div className="space-y-5">
-          {/* Image URL */}
+          {/* Image upload */}
           <div>
             <label className="block text-xs tracking-widest uppercase text-ink-muted mb-2">
-              Image URL
+              Image
             </label>
-            <input
-              type="text"
-              value={form.src}
-              onChange={(e) => handleChange("src", e.target.value)}
-              placeholder="https://example.com/image.jpg or /images/..."
-              className="w-full px-3 py-2 bg-cream-dark border border-border text-ink text-sm rounded focus:outline-none focus:border-accent transition-colors"
-            />
-            {imagePreview && (
-              <div className="mt-2 bg-cream-dark p-2 overflow-hidden">
-                <Image
-                  src={imagePreview}
-                  alt="Preview"
-                  width={400}
-                  height={300}
-                  className="w-full h-auto"
-                />
-              </div>
-            )}
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`border-2 border-dashed rounded p-4 text-center cursor-pointer transition-colors ${
+                dragOver
+                  ? "border-accent bg-accent/5"
+                  : "border-border hover:border-accent"
+              }`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              {uploading ? (
+                <p className="text-sm text-ink-muted">Uploading...</p>
+              ) : imagePreview ? (
+                <div className="space-y-2">
+                  <Image
+                    src={imagePreview}
+                    alt="Preview"
+                    width={400}
+                    height={300}
+                    className="w-full h-auto rounded"
+                  />
+                  <p className="text-xs text-ink-muted">
+                    Drop a new image or click to replace
+                  </p>
+                </div>
+              ) : (
+                <div className="py-6">
+                  <p className="text-sm text-ink-muted">
+                    Drop an image here or click to browse
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Year, Volume, Issue in a row */}
