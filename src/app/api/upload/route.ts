@@ -15,9 +15,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  const blob = await put(`archive/${Date.now()}-${file.name}`, file, {
-    access: "public",
-  });
-
-  return NextResponse.json({ url: blob.url });
+  try {
+    const blob = await put(`archive/${Date.now()}-${file.name}`, file, {
+      access: "public",
+    });
+    return NextResponse.json({ url: blob.url });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

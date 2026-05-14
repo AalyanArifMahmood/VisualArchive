@@ -138,7 +138,7 @@ export default function EditEntryModal({
         setForm((prev) => ({ ...prev, src: data.url }));
         setImagePreview(data.url);
       } else {
-        alert("Upload failed. Please try again.");
+        alert(`Upload failed: ${data.error || "Unknown error"}`);
       }
     } catch {
       alert("Upload failed. Please try again.");
