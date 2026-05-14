@@ -29,6 +29,7 @@ export default function EditableText({
   const [value, setValue] = useState(defaultValue);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
 
   // Load saved content on mount
@@ -40,7 +41,8 @@ export default function EditableText({
           setValue(data.value);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoaded(true));
   }, [contentKey]);
 
   useEffect(() => {
@@ -78,7 +80,13 @@ export default function EditableText({
   };
 
   if (!isAdmin) {
-    return <Tag className={className}>{value}</Tag>;
+    return (
+      <Tag
+        className={`${className} transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+      >
+        {value}
+      </Tag>
+    );
   }
 
   if (editing) {
@@ -130,7 +138,7 @@ export default function EditableText({
 
   return (
     <div
-      className="group/edit relative cursor-pointer"
+      className={`group/edit relative cursor-pointer transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
       onClick={() => setEditing(true)}
     >
       <Tag className={className}>{value}</Tag>
