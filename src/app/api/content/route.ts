@@ -1,22 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, ADMIN_EMAILS } from "@/auth";
-import fs from "fs/promises";
-import path from "path";
-
-const DATA_FILE = path.join(process.cwd(), "content-overrides.json");
-
-async function readOverrides(): Promise<Record<string, string>> {
-  try {
-    const data = await fs.readFile(DATA_FILE, "utf-8");
-    return JSON.parse(data);
-  } catch {
-    return {};
-  }
-}
-
-async function writeOverrides(overrides: Record<string, string>) {
-  await fs.writeFile(DATA_FILE, JSON.stringify(overrides, null, 2), "utf-8");
-}
+import { kv } from "@vercel/kv";
 
 export async function GET(request: NextRequest) {
   const key = request.nextUrl.searchParams.get("key");
@@ -24,8 +8,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Missing key" }, { status: 400 });
   }
 
-  const overrides = await readOverrides();
-  return NextResponse.json({ value: overrides[key] ?? null });
+  const value = await kv.get<string>(`content:${key}`);
+  return NextResponse.json({ value: value ?? null });
 }
 
 export async function POST(request: NextRequest) {
@@ -39,9 +23,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const overrides = await readOverrides();
-  overrides[key] = value;
-  await writeOverrides(overrides);
-
+  await kv.set(`content:${key}`, value);
   return NextResponse.json({ success: true });
 }
