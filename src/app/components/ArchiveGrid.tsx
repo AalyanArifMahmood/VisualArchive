@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
-import { archiveItems, years } from "../data/archive";
+import { archiveItems } from "../data/archive";
 import type { ArchiveItem } from "../data/archive";
 import Lightbox from "./Lightbox";
 import EditEntryModal from "./EditEntryModal";
@@ -26,7 +26,8 @@ export default function ArchiveGrid() {
   const { data: session } = useSession();
   const isAdmin = !!session?.user?.email && ADMIN_EMAILS.includes(session.user.email);
 
-  const [activeYear, setActiveYear] = useState<number | null>(null);
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [yearSearch, setYearSearch] = useState("");
   const [lightboxItem, setLightboxItem] = useState<ArchiveItem | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [addingEntry, setAddingEntry] = useState(false);
@@ -132,9 +133,15 @@ export default function ArchiveGrid() {
     loadAllItems();
   };
 
-  const filtered = activeYear
-    ? displayItems.filter((item) => item.displayYear === String(activeYear))
-    : displayItems;
+  const filtered = displayItems
+    .filter((item) =>
+      yearSearch ? item.displayYear.includes(yearSearch) : true
+    )
+    .sort((a, b) =>
+      sortOrder === "newest"
+        ? parseInt(b.displayYear) - parseInt(a.displayYear)
+        : parseInt(a.displayYear) - parseInt(b.displayYear)
+    );
 
   // Find the item being edited (static or custom)
   const editingItem = editingId
@@ -143,31 +150,33 @@ export default function ArchiveGrid() {
 
   return (
     <>
-      {/* Year filter buttons */}
-      <div className="flex flex-wrap gap-3 mb-10">
-        <button
-          onClick={() => setActiveYear(null)}
-          className={`px-4 py-2 text-xs tracking-widest uppercase border transition-colors ${
-            activeYear === null
-              ? "bg-sepia text-cream border-sepia"
-              : "bg-transparent text-ink-light border-border hover:border-sepia hover:text-ink"
-          }`}
-        >
-          All Years
-        </button>
-        {years.map((year) => (
-          <button
-            key={year}
-            onClick={() => setActiveYear(year)}
-            className={`px-4 py-2 text-xs tracking-widest uppercase border transition-colors ${
-              activeYear === year
-                  ? "bg-sepia text-cream border-sepia"
-                  : "bg-transparent text-ink-light border-border hover:border-sepia hover:text-ink"
-            }`}
+      {/* Sort and search controls */}
+      <div className="flex flex-wrap items-center gap-4 mb-10">
+        <div className="flex items-center gap-2">
+          <label className="text-xs tracking-widest uppercase text-ink-muted">
+            Sort
+          </label>
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as "newest" | "oldest")}
+            className="px-3 py-2 text-xs tracking-wide bg-cream-dark border border-border text-ink rounded focus:outline-none focus:border-accent transition-colors"
           >
-            {year}
-          </button>
-        ))}
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-xs tracking-widest uppercase text-ink-muted">
+            Year
+          </label>
+          <input
+            type="text"
+            value={yearSearch}
+            onChange={(e) => setYearSearch(e.target.value)}
+            placeholder="e.g. 1965"
+            className="w-28 px-3 py-2 text-xs bg-cream-dark border border-border text-ink rounded focus:outline-none focus:border-accent transition-colors"
+          />
+        </div>
       </div>
 
       {/* Image grid */}
