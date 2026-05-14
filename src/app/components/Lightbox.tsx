@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import Image from "next/image";
 import type { ArchiveItem } from "../data/archive";
-import EditableText from "./EditableText";
 
 interface LightboxProps {
   item: ArchiveItem | null;
@@ -11,6 +10,14 @@ interface LightboxProps {
 }
 
 export default function Lightbox({ item, onClose }: LightboxProps) {
+  const [displayData, setDisplayData] = useState<{
+    src: string;
+    year: string;
+    volume: string;
+    issue: string;
+    caption: string;
+  } | null>(null);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -22,6 +29,34 @@ export default function Lightbox({ item, onClose }: LightboxProps) {
     if (item) {
       document.body.style.overflow = "hidden";
       document.addEventListener("keydown", handleKeyDown);
+
+      // Load overrides for this item
+      const fields = ["src", "year", "volume", "issue", "caption"] as const;
+      const defaults = {
+        src: item.src,
+        year: String(item.year),
+        volume: String(item.volume),
+        issue: String(item.issue),
+        caption: item.caption,
+      };
+      setDisplayData(defaults);
+
+      Promise.all(
+        fields.map((field) =>
+          fetch(`/api/content?key=${encodeURIComponent(`archive-${field}-${item.id}`)}`)
+            .then((res) => res.json())
+            .then((data) => ({ field, value: data.value }))
+            .catch(() => ({ field, value: null }))
+        )
+      ).then((results) => {
+        const updated = { ...defaults };
+        for (const { field, value } of results) {
+          if (value !== null && value !== undefined) {
+            updated[field] = value;
+          }
+        }
+        setDisplayData(updated);
+      });
     }
     return () => {
       document.body.style.overflow = "";
@@ -29,7 +64,7 @@ export default function Lightbox({ item, onClose }: LightboxProps) {
     };
   }, [item, handleKeyDown]);
 
-  if (!item) return null;
+  if (!item || !displayData) return null;
 
   return (
     <div
@@ -50,8 +85,8 @@ export default function Lightbox({ item, onClose }: LightboxProps) {
 
         <div className="relative w-full aspect-[4/3]">
           <Image
-            src={item.src}
-            alt={item.caption}
+            src={displayData.src}
+            alt={displayData.caption}
             fill
             className="object-contain"
             sizes="(max-width: 896px) 100vw, 896px"
@@ -60,15 +95,11 @@ export default function Lightbox({ item, onClose }: LightboxProps) {
 
         <div className="mt-4 pb-2">
           <p className="text-xs tracking-widest uppercase text-ink-muted mb-2">
-            {item.year} · Vol. {item.volume}, Issue {item.issue}
+            {displayData.year} · Vol. {displayData.volume}, Issue {displayData.issue}
           </p>
-          <EditableText
-            contentKey={`archive-caption-${item.id}`}
-            defaultValue={item.caption}
-            as="p"
-            className="text-sm leading-relaxed text-ink-light"
-            multiline
-          />
+          <p className="text-sm leading-relaxed text-ink-light">
+            {displayData.caption}
+          </p>
         </div>
       </div>
     </div>
