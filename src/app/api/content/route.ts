@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, ADMIN_EMAILS } from "@/auth";
-import { kv } from "@vercel/kv";
+import Redis from "ioredis";
+
+function getRedis() {
+  return new Redis(process.env.REDIS_URL!);
+}
 
 export async function GET(request: NextRequest) {
   const key = request.nextUrl.searchParams.get("key");
@@ -8,8 +12,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Missing key" }, { status: 400 });
   }
 
-  const value = await kv.get<string>(`content:${key}`);
-  return NextResponse.json({ value: value ?? null });
+  const redis = getRedis();
+  try {
+    const value = await redis.get(`content:${key}`);
+    return NextResponse.json({ value: value ?? null });
+  } finally {
+    redis.disconnect();
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -23,6 +32,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  await kv.set(`content:${key}`, value);
-  return NextResponse.json({ success: true });
+  const redis = getRedis();
+  try {
+    await redis.set(`content:${key}`, value);
+    return NextResponse.json({ success: true });
+  } finally {
+    redis.disconnect();
+  }
 }
