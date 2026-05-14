@@ -17,6 +17,7 @@ function getAdminUsers(): AdminUser[] {
 export const ADMIN_EMAILS = getAdminUsers().map((u) => u.email);
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
   providers: [
     Credentials({
       name: "Sign In",
