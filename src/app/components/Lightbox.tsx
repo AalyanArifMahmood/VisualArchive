@@ -97,9 +97,10 @@ export default function Lightbox({ item, onClose }: LightboxProps) {
           <p className="text-xs tracking-widest uppercase text-ink-muted mb-2">
             {displayData.year} · Vol. {displayData.volume}, Issue {displayData.issue}
           </p>
-          <p className="text-sm leading-relaxed text-ink-light">
-            {displayData.caption}
-          </p>
+          <div
+            className="text-sm leading-relaxed text-ink-light"
+            dangerouslySetInnerHTML={{ __html: displayData.caption }}
+          />
         </div>
       </div>
     </div>

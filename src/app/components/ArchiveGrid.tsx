@@ -202,9 +202,10 @@ export default function ArchiveGrid() {
               <p className="text-xs tracking-widest uppercase text-ink-muted">
                 {item.displayYear} · Vol. {item.displayVolume}, No. {item.displayIssue}
               </p>
-              <p className="mt-1 text-sm leading-relaxed text-ink-light line-clamp-2">
-                {item.displayCaption}
-              </p>
+              <div
+                className="mt-1 text-sm leading-relaxed text-ink-light line-clamp-2"
+                dangerouslySetInnerHTML={{ __html: item.displayCaption }}
+              />
             </div>
 
             {isAdmin && (

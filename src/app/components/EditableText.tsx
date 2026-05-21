@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import dynamic from "next/dynamic";
+
+const RichTextEditor = dynamic(() => import("./RichTextEditor"), { ssr: false });
 
 const ADMIN_EMAILS = [
   "aalyanarif875@gmail.com",
@@ -21,7 +24,6 @@ export default function EditableText({
   defaultValue,
   as: Tag = "p",
   className = "",
-  multiline = false,
 }: EditableTextProps) {
   const { data: session } = useSession();
   const isAdmin = !!session?.user?.email && ADMIN_EMAILS.includes(session.user.email);
@@ -30,7 +32,7 @@ export default function EditableText({
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
+  const [draftValue, setDraftValue] = useState(defaultValue);
 
   // Load saved content on mount
   useEffect(() => {
@@ -45,12 +47,10 @@ export default function EditableText({
       .finally(() => setLoaded(true));
   }, [contentKey]);
 
-  useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [editing]);
+  const handleEdit = () => {
+    setDraftValue(value);
+    setEditing(true);
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -58,11 +58,11 @@ export default function EditableText({
       await fetch("/api/content", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: contentKey, value }),
+        body: JSON.stringify({ key: contentKey, value: draftValue }),
       });
+      setValue(draftValue);
     } catch {
       // Revert on error
-      setValue(defaultValue);
     }
     setSaving(false);
     setEditing(false);
@@ -70,17 +70,19 @@ export default function EditableText({
 
   const handleCancel = () => {
     setEditing(false);
-    // Reload saved value
-    fetch(`/api/content?key=${encodeURIComponent(contentKey)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setValue(data.value ?? defaultValue);
-      })
-      .catch(() => setValue(defaultValue));
+    setDraftValue(value);
   };
 
+  // Check if content contains HTML tags
+  const isHtml = (str: string) => /<[a-z][\s\S]*>/i.test(str);
+
   if (!isAdmin) {
-    return (
+    return isHtml(value) ? (
+      <Tag
+        className={`${className} transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+        dangerouslySetInnerHTML={{ __html: value }}
+      />
+    ) : (
       <Tag
         className={`${className} transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
       >
@@ -92,31 +94,10 @@ export default function EditableText({
   if (editing) {
     return (
       <div className="relative">
-        {multiline ? (
-          <textarea
-            ref={inputRef as React.RefObject<HTMLTextAreaElement>}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            className={`${className} w-full bg-cream-dark border border-accent/40 px-2 py-1 rounded focus:outline-none focus:border-accent resize-y`}
-            rows={4}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") handleCancel();
-              if (e.key === "Enter" && e.ctrlKey) handleSave();
-            }}
-          />
-        ) : (
-          <input
-            ref={inputRef as React.RefObject<HTMLInputElement>}
-            type="text"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            className={`${className} w-full bg-cream-dark border border-accent/40 px-2 py-1 rounded focus:outline-none focus:border-accent`}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") handleCancel();
-              if (e.key === "Enter") handleSave();
-            }}
-          />
-        )}
+        <RichTextEditor
+          content={draftValue}
+          onChange={setDraftValue}
+        />
         <div className="flex gap-2 mt-1">
           <button
             onClick={handleSave}
@@ -139,9 +120,13 @@ export default function EditableText({
   return (
     <div
       className={`group/edit relative cursor-pointer transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
-      onClick={() => setEditing(true)}
+      onClick={handleEdit}
     >
-      <Tag className={className}>{value}</Tag>
+      {isHtml(value) ? (
+        <Tag className={className} dangerouslySetInnerHTML={{ __html: value }} />
+      ) : (
+        <Tag className={className}>{value}</Tag>
+      )}
       <span className="invisible group-hover/edit:visible absolute -top-2 -right-2 bg-accent text-cream text-[10px] px-1.5 py-0.5 rounded tracking-wide">
         Edit
       </span>

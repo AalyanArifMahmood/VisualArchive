@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import dynamic from "next/dynamic";
+
+const RichTextEditor = dynamic(() => import("./RichTextEditor"), { ssr: false });
 
 interface EntryData {
   src: string;
@@ -273,12 +276,9 @@ export default function EditEntryModal({
             <label className="block text-xs tracking-widest uppercase text-ink-muted mb-2">
               Caption
             </label>
-            <textarea
-              value={form.caption}
-              onChange={(e) => handleChange("caption", e.target.value)}
-              rows={3}
-              placeholder="Describe this archive entry..."
-              className="w-full px-3 py-2 bg-cream-dark border border-border text-ink text-sm rounded focus:outline-none focus:border-accent transition-colors resize-y"
+            <RichTextEditor
+              content={form.caption}
+              onChange={(html) => handleChange("caption", html)}
             />
           </div>
 
