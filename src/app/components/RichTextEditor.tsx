@@ -98,9 +98,9 @@ export default function RichTextEditor({
   if (!editor) return null;
 
   return (
-    <div className={`border border-border rounded overflow-hidden ${className}`}>
+    <div className={`border border-border rounded ${className}`}>
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-cream-dark border-b border-border">
+      <div className="relative flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-cream-dark border-b border-border">
         <ToolbarButton
           active={editor.isActive("bold")}
           onClick={() => editor.chain().focus().toggleBold().run()}
@@ -177,7 +177,7 @@ export default function RichTextEditor({
             </span>
           </ToolbarButton>
           {showColors && (
-            <div className="absolute top-full left-0 mt-1 p-2 bg-cream border border-border rounded shadow-lg z-10 w-48">
+            <div className="absolute top-full left-0 mt-1 p-2 bg-cream border border-border rounded shadow-lg z-50 w-48">
               <div className="grid grid-cols-5 gap-1">
                 {COLOR_PRESETS.map((color) => (
                   <button
