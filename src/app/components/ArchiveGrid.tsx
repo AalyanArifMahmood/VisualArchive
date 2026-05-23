@@ -26,7 +26,7 @@ export default function ArchiveGrid() {
   const { data: session } = useSession();
   const isAdmin = !!session?.user?.email && ADMIN_EMAILS.includes(session.user.email);
 
-  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "volume" | "issue">("newest");
   const [yearSearch, setYearSearch] = useState("");
   const [lightboxItem, setLightboxItem] = useState<ArchiveItem | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -137,11 +137,20 @@ export default function ArchiveGrid() {
     .filter((item) =>
       yearSearch ? item.displayYear.includes(yearSearch) : true
     )
-    .sort((a, b) =>
-      sortOrder === "newest"
-        ? parseInt(b.displayYear) - parseInt(a.displayYear)
-        : parseInt(a.displayYear) - parseInt(b.displayYear)
-    );
+    .sort((a, b) => {
+      switch (sortOrder) {
+        case "newest":
+          return parseInt(b.displayYear) - parseInt(a.displayYear);
+        case "oldest":
+          return parseInt(a.displayYear) - parseInt(b.displayYear);
+        case "volume":
+          return parseInt(b.displayVolume) - parseInt(a.displayVolume) ||
+            parseInt(b.displayIssue) - parseInt(a.displayIssue);
+        case "issue":
+          return parseInt(b.displayIssue) - parseInt(a.displayIssue) ||
+            parseInt(b.displayVolume) - parseInt(a.displayVolume);
+      }
+    });
 
   // Find the item being edited (static or custom)
   const editingItem = editingId
@@ -158,11 +167,13 @@ export default function ArchiveGrid() {
           </label>
           <select
             value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value as "newest" | "oldest")}
+            onChange={(e) => setSortOrder(e.target.value as "newest" | "oldest" | "volume" | "issue")}
             className="px-3 py-2 text-xs tracking-wide bg-cream-dark border border-border text-ink rounded focus:outline-none focus:border-accent transition-colors"
           >
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
+            <option value="volume">Volume (High → Low)</option>
+            <option value="issue">Issue (High → Low)</option>
           </select>
         </div>
         <div className="flex items-center gap-2">
