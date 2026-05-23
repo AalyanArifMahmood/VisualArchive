@@ -105,14 +105,12 @@ export default function RichTextEditor({
 
   const applyHexColor = () => {
     if (/^[0-9a-fA-F]{3,6}$/.test(hexInput)) {
-      if (savedSelection.current) {
-        editor
-          .chain()
-          .setTextSelection(savedSelection.current)
-          .setColor(`#${hexInput}`)
-          .run();
+      const sel = savedSelection.current;
+      if (sel && sel.from !== sel.to) {
+        editor.chain().focus().setTextSelection(sel).setColor(`#${hexInput}`).run();
       } else {
-        editor.chain().setColor(`#${hexInput}`).run();
+        // No selection — apply to all content
+        editor.chain().focus().selectAll().setColor(`#${hexInput}`).run();
       }
       setShowColors(false);
       setHexInput("");
@@ -207,7 +205,7 @@ export default function RichTextEditor({
                     type="button"
                     onClick={() => {
                       if (savedSelection.current) {
-                        editor.chain().setTextSelection(savedSelection.current).setColor(color).run();
+                        editor.chain().focus().setTextSelection(savedSelection.current).setColor(color).run();
                       } else {
                         editor.chain().focus().setColor(color).run();
                       }
@@ -251,7 +249,7 @@ export default function RichTextEditor({
                   type="color"
                   onChange={(e) => {
                     if (savedSelection.current) {
-                      editor.chain().setTextSelection(savedSelection.current).setColor(e.target.value).run();
+                      editor.chain().focus().setTextSelection(savedSelection.current).setColor(e.target.value).run();
                     } else {
                       editor.chain().focus().setColor(e.target.value).run();
                     }
