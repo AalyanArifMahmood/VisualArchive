@@ -7,7 +7,7 @@ import EditableText from "./components/EditableText";
 export default function Home() {
   return (
     <div className="max-w-6xl mx-auto px-6 py-16">
-      <section className="flex flex-col md:flex-row items-center gap-12">
+      <section className="flex flex-col md:flex-row items-start gap-12">
         <div className="flex-1">
           <EditableText
             contentKey="home-title"
