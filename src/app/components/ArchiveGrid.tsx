@@ -26,7 +26,7 @@ export default function ArchiveGrid() {
   const { data: session } = useSession();
   const isAdmin = !!session?.user?.email && ADMIN_EMAILS.includes(session.user.email);
 
-  const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "volume" | "issue">("newest");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "volume-desc" | "volume-asc" | "issue-desc" | "issue-asc">("newest");
   const [yearSearch, setYearSearch] = useState("");
   const [lightboxItem, setLightboxItem] = useState<ArchiveItem | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -143,12 +143,18 @@ export default function ArchiveGrid() {
           return parseInt(b.displayYear) - parseInt(a.displayYear);
         case "oldest":
           return parseInt(a.displayYear) - parseInt(b.displayYear);
-        case "volume":
+        case "volume-desc":
           return parseInt(b.displayVolume) - parseInt(a.displayVolume) ||
             parseInt(b.displayIssue) - parseInt(a.displayIssue);
-        case "issue":
+        case "volume-asc":
+          return parseInt(a.displayVolume) - parseInt(b.displayVolume) ||
+            parseInt(a.displayIssue) - parseInt(b.displayIssue);
+        case "issue-desc":
           return parseInt(b.displayIssue) - parseInt(a.displayIssue) ||
             parseInt(b.displayVolume) - parseInt(a.displayVolume);
+        case "issue-asc":
+          return parseInt(a.displayIssue) - parseInt(b.displayIssue) ||
+            parseInt(a.displayVolume) - parseInt(b.displayVolume);
       }
     });
 
@@ -167,13 +173,15 @@ export default function ArchiveGrid() {
           </label>
           <select
             value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value as "newest" | "oldest" | "volume" | "issue")}
+            onChange={(e) => setSortOrder(e.target.value as "newest" | "oldest" | "volume-desc" | "volume-asc" | "issue-desc" | "issue-asc")}
             className="px-3 py-2 text-xs tracking-wide bg-cream-dark border border-border text-ink rounded focus:outline-none focus:border-accent transition-colors"
           >
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
-            <option value="volume">Volume (High → Low)</option>
-            <option value="issue">Issue (High → Low)</option>
+            <option value="volume-desc">Volume (High → Low)</option>
+            <option value="volume-asc">Volume (Low → High)</option>
+            <option value="issue-desc">Issue (High → Low)</option>
+            <option value="issue-asc">Issue (Low → High)</option>
           </select>
         </div>
         <div className="flex items-center gap-2">
