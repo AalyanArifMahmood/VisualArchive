@@ -64,6 +64,14 @@ export default function RichTextEditor({
   const [hexInput, setHexInput] = useState("");
   const colorRef = useRef<HTMLDivElement>(null);
 
+  const applyHexColor = () => {
+    if (/^[0-9a-fA-F]{3,6}$/.test(hexInput) && editor) {
+      editor.chain().setColor(`#${hexInput}`).run();
+      setShowColors(false);
+      setHexInput("");
+    }
+  };
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -199,11 +207,11 @@ export default function RichTextEditor({
                   type="text"
                   value={hexInput}
                   onChange={(e) => setHexInput(e.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 6))}
+                  onMouseDown={(e) => e.stopPropagation()}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && /^[0-9a-fA-F]{3,6}$/.test(hexInput)) {
-                      editor.chain().focus().setColor(`#${hexInput}`).run();
-                      setShowColors(false);
-                      setHexInput("");
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      applyHexColor();
                     }
                   }}
                   placeholder="hex value"
@@ -211,12 +219,9 @@ export default function RichTextEditor({
                 />
                 <button
                   type="button"
-                  onClick={() => {
-                    if (/^[0-9a-fA-F]{3,6}$/.test(hexInput)) {
-                      editor.chain().focus().setColor(`#${hexInput}`).run();
-                      setShowColors(false);
-                      setHexInput("");
-                    }
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    applyHexColor();
                   }}
                   className="text-xs px-1.5 py-1 bg-cream-dark border border-border rounded text-ink hover:bg-border transition-colors"
                 >
