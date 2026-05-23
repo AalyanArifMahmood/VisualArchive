@@ -72,7 +72,7 @@ export default function Lightbox({ item, onClose }: LightboxProps) {
       onClick={onClose}
     >
       <div
-        className="relative max-w-4xl w-full bg-cream p-4 shadow-2xl"
+        className="relative max-w-4xl w-full max-h-[90vh] overflow-y-auto bg-cream p-4 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
