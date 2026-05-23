@@ -23,6 +23,7 @@ const FONT_OPTIONS = [
 ];
 
 const COLOR_PRESETS = [
+  "#B22222", "#1E1410", "#4A3828", "#8B7B6B", "#3A2A1E",
   "#000000", "#374151", "#6b7280", "#991b1b", "#9a3412",
   "#854d0e", "#166534", "#1e40af", "#5b21b6", "#9d174d",
 ];
@@ -60,6 +61,7 @@ export default function RichTextEditor({
   className = "",
 }: RichTextEditorProps) {
   const [showColors, setShowColors] = useState(false);
+  const [hexInput, setHexInput] = useState("");
   const colorRef = useRef<HTMLDivElement>(null);
 
   const editor = useEditor({
@@ -175,29 +177,61 @@ export default function RichTextEditor({
             </span>
           </ToolbarButton>
           {showColors && (
-            <div className="absolute top-full left-0 mt-1 p-2 bg-cream border border-border rounded shadow-lg z-10 grid grid-cols-5 gap-1">
-              {COLOR_PRESETS.map((color) => (
+            <div className="absolute top-full left-0 mt-1 p-2 bg-cream border border-border rounded shadow-lg z-10 w-48">
+              <div className="grid grid-cols-5 gap-1">
+                {COLOR_PRESETS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => {
+                      editor.chain().focus().setColor(color).run();
+                      setShowColors(false);
+                    }}
+                    className="w-6 h-6 rounded border border-border hover:scale-110 transition-transform"
+                    style={{ backgroundColor: color }}
+                    title={color}
+                  />
+                ))}
+              </div>
+              <div className="mt-2 flex items-center gap-1">
+                <span className="text-xs text-ink-muted">#</span>
+                <input
+                  type="text"
+                  value={hexInput}
+                  onChange={(e) => setHexInput(e.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 6))}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && /^[0-9a-fA-F]{3,6}$/.test(hexInput)) {
+                      editor.chain().focus().setColor(`#${hexInput}`).run();
+                      setShowColors(false);
+                      setHexInput("");
+                    }
+                  }}
+                  placeholder="hex value"
+                  className="flex-1 text-xs px-1.5 py-1 bg-cream-dark border border-border rounded text-ink focus:outline-none focus:border-accent"
+                />
                 <button
-                  key={color}
                   type="button"
                   onClick={() => {
-                    editor.chain().focus().setColor(color).run();
-                    setShowColors(false);
+                    if (/^[0-9a-fA-F]{3,6}$/.test(hexInput)) {
+                      editor.chain().focus().setColor(`#${hexInput}`).run();
+                      setShowColors(false);
+                      setHexInput("");
+                    }
                   }}
-                  className="w-6 h-6 rounded border border-border hover:scale-110 transition-transform"
-                  style={{ backgroundColor: color }}
-                  title={color}
-                />
-              ))}
-              <div className="col-span-5 mt-1">
+                  className="text-xs px-1.5 py-1 bg-cream-dark border border-border rounded text-ink hover:bg-border transition-colors"
+                >
+                  ✓
+                </button>
+              </div>
+              <div className="mt-2">
                 <input
                   type="color"
                   onChange={(e) => {
                     editor.chain().focus().setColor(e.target.value).run();
                     setShowColors(false);
                   }}
-                  className="w-full h-6 cursor-pointer"
-                  title="Custom color"
+                  className="w-full h-6 cursor-pointer rounded"
+                  title="Color picker"
                 />
               </div>
             </div>
