@@ -63,14 +63,7 @@ export default function RichTextEditor({
   const [showColors, setShowColors] = useState(false);
   const [hexInput, setHexInput] = useState("");
   const colorRef = useRef<HTMLDivElement>(null);
-
-  const applyHexColor = () => {
-    if (/^[0-9a-fA-F]{3,6}$/.test(hexInput) && editor) {
-      editor.chain().setColor(`#${hexInput}`).run();
-      setShowColors(false);
-      setHexInput("");
-    }
-  };
+  const savedSelection = useRef<{ from: number; to: number } | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -104,6 +97,27 @@ export default function RichTextEditor({
   }, []);
 
   if (!editor) return null;
+
+  const saveSelection = () => {
+    const { from, to } = editor.state.selection;
+    savedSelection.current = { from, to };
+  };
+
+  const applyHexColor = () => {
+    if (/^[0-9a-fA-F]{3,6}$/.test(hexInput)) {
+      if (savedSelection.current) {
+        editor
+          .chain()
+          .setTextSelection(savedSelection.current)
+          .setColor(`#${hexInput}`)
+          .run();
+      } else {
+        editor.chain().setColor(`#${hexInput}`).run();
+      }
+      setShowColors(false);
+      setHexInput("");
+    }
+  };
 
   return (
     <div className={`border border-border rounded ${className}`}>
@@ -169,7 +183,7 @@ export default function RichTextEditor({
         {/* Color picker */}
         <div className="relative" ref={colorRef}>
           <ToolbarButton
-            onClick={() => setShowColors(!showColors)}
+            onClick={() => { saveSelection(); setShowColors(!showColors); }}
             title="Text Color"
           >
             <span className="flex flex-col items-center leading-none">
@@ -192,7 +206,11 @@ export default function RichTextEditor({
                     key={color}
                     type="button"
                     onClick={() => {
-                      editor.chain().focus().setColor(color).run();
+                      if (savedSelection.current) {
+                        editor.chain().setTextSelection(savedSelection.current).setColor(color).run();
+                      } else {
+                        editor.chain().focus().setColor(color).run();
+                      }
                       setShowColors(false);
                     }}
                     className="w-6 h-6 rounded border border-border hover:scale-110 transition-transform"
@@ -232,7 +250,11 @@ export default function RichTextEditor({
                 <input
                   type="color"
                   onChange={(e) => {
-                    editor.chain().focus().setColor(e.target.value).run();
+                    if (savedSelection.current) {
+                      editor.chain().setTextSelection(savedSelection.current).setColor(e.target.value).run();
+                    } else {
+                      editor.chain().focus().setColor(e.target.value).run();
+                    }
                     setShowColors(false);
                   }}
                   className="w-full h-6 cursor-pointer rounded"
